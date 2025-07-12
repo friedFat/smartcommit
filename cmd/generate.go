@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +8,7 @@ import (
 	"smartcommit/diff"
 	"smartcommit/llm"
 	"smartcommit/prompt"
+	"time"
 
 	promptui "github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -19,7 +19,6 @@ var GenerateCmd = &cobra.Command{
 	Short: "Generate a commit message using AI",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadOrDefault()
-		
 
 		diffText, err := diff.GetStagedDiff()
 		if err != nil || len(diffText) == 0 {
@@ -41,25 +40,33 @@ var GenerateCmd = &cobra.Command{
 			return
 		}
 
-		reader := bufio.NewReader(os.Stdin)
-
 		for {
 			fmt.Println("\n💡 Generated Commit Message:")
 			fmt.Println("----------------------------------")
 			fmt.Println(message)
 			fmt.Println("----------------------------------")
-			fmt.Print("Choose: [c]ommit, [e]dit prompt, [r]egenerate, [q]uit: ")
+			fmt.Print("Choose [c]ommit, [e]dit message, [r]egenerate, [q]uit: ")
 
-			choice, _ := reader.ReadString('\n')
-			switch choice[:1] {
+			var choice string
+			fmt.Scanln(&choice)
+
+			switch choice {
 			case "c":
 				runGitCommit(message)
 				return
 			case "e":
-				promptText = editPrompt(promptText)
-				message, _ = provider.Generate(promptText)
+				message = editMessage(message)
 			case "r":
-				message, _ = provider.Generate(promptText)
+				fmt.Print("\n🔄 Regenerating")
+				for i := 0; i < 3; i++ {
+					fmt.Print(".")
+					time.Sleep(200 * time.Millisecond)
+				}
+				message, err = provider.Generate(promptText)
+				if err != nil {
+					fmt.Println("❌ Regeneration failed:", err)
+					continue
+				}
 			case "q":
 				return
 			default:
@@ -84,15 +91,16 @@ func executeCommand(name string, args ...string) error {
 	return c.Run()
 }
 
-func editPrompt(defaultPrompt string) string {
+func editMessage(current string) string {
 	prompt := promptui.Prompt{
-		Label:   "Edit Prompt",
-		Default: defaultPrompt,
+		Label:     "Edit Commit Message",
+		Default:   current,
 		AllowEdit: true,
 	}
 	result, err := prompt.Run()
 	if err != nil {
-		return defaultPrompt
+		fmt.Println("⚠️ Edit cancelled.")
+		return current
 	}
 	return result
 }

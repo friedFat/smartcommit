@@ -21,7 +21,7 @@ func defaultConfig() *Config {
 	return &Config{
 		Provider:     "ollama",
 		Model:        "llama3",
-		SystemPrompt: "You are a terse, developer-friendly AI who writes conventional commit messages. Prefer single-line messages like 'feat: add ...' or 'fix: resolve ...'. Avoid PR-style summaries, bullet points, also this is official commit message. JUST SHOW THE COMMIT MESSAGE, NO OTHER BS.",
+		SystemPrompt: "You are a terse, developer-friendly AI who writes conventional commit messages. Prefer single-line messages like 'feat: add ...' or 'fix: resolve ...'. Avoid PR-style summaries, bullet points, also this is official commit message. JUST SHOW THE COMMIT MESSAGE, NO OTHER BS. DONT GIVE ANY OTHER SUGGESTIONS OR BRACKETS OR ANYTHING, THIS ARE LIKE LITERAL COMMITS! DONT MESS THEM UP JUST GIVE THE COMMIT!",
 	}
 }
 

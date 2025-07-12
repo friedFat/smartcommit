@@ -1,12 +1,9 @@
-// File: cmd/config.go
 package cmd
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"smartcommit/config"
 
@@ -16,68 +13,85 @@ import (
 var ConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "View or change smartcommit configuration",
+	Long: `Manage smartcommit configuration
+
+Examples:
+  smartcommit config edit       # Edit the system prompt (tone/style)
+  smartcommit config show       # View current configuration`,
 }
 
-var setCmd = &cobra.Command{
-	Use:   "set <key> <value>",
-	Short: "Set a configuration value",
-	Args:  cobra.ExactArgs(2),
+var EditConfigCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Edit system prompt in your preferred editor (e.g., vim, nano, code)",
 	Run: func(cmd *cobra.Command, args []string) {
-		key, value := args[0], args[1]
 		cfg := config.LoadOrDefault()
-		cfg.Set(key, value)
-		if err := config.Save(cfg); err != nil {
-			fmt.Println("❌ Failed to save config:", err)
+
+		tmpFile, err := os.CreateTemp("", "smartcommit-prompt-*.txt")
+		if err != nil {
+			fmt.Println("❌ Failed to create temp file:", err)
 			return
 		}
-		fmt.Println("✅ Config updated")
-	},
-}
+		defer os.Remove(tmpFile.Name())
 
-var showCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Display current configuration",
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.LoadOrDefault()
-		cfg.PrettyPrint()
-	},
-}
+		// Write current prompt to temp file
+		_, _ = tmpFile.WriteString(cfg.SystemPrompt)
+		tmpFile.Close()
 
-var editCmd = &cobra.Command{
-	Use:   "edit system_prompt",
-	Short: "Edit the system prompt using your default editor",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		if args[0] != "system_prompt" {
-			fmt.Println("❌ Only 'system_prompt' can be edited via editor for now.")
-			return
-		}
-
-		cfg := config.LoadOrDefault()
-		tmpfile := filepath.Join(os.TempDir(), "smartcommit_system_prompt.txt")
-		os.WriteFile(tmpfile, []byte(cfg.SystemPrompt), 0644)
-
+		// Open in default editor
 		editor := os.Getenv("EDITOR")
 		if editor == "" {
 			editor = "vim"
 		}
+		cmdEdit := exec.Command(editor, tmpFile.Name())
+		cmdEdit.Stdin = os.Stdin
+		cmdEdit.Stdout = os.Stdout
+		cmdEdit.Stderr = os.Stderr
 
-		execCmd := exec.Command(editor, tmpfile)
-		execCmd.Stdin = os.Stdin
-		execCmd.Stdout = os.Stdout
-		execCmd.Stderr = os.Stderr
-		execCmd.Run()
-
-		updated, _ := os.ReadFile(tmpfile)
-		cfg.SystemPrompt = strings.TrimSpace(string(updated))
-		if err := config.Save(cfg); err != nil {
-			fmt.Println("❌ Failed to save:", err)
+		if err := cmdEdit.Run(); err != nil {
+			fmt.Println("❌ Failed to open editor:", err)
 			return
 		}
-		fmt.Println("✅ Updated system prompt")
+
+		// Read edited prompt
+		editedBytes, err := os.ReadFile(tmpFile.Name())
+		if err != nil {
+			fmt.Println("❌ Failed to read edited prompt:", err)
+			return
+		}
+
+		edited := string(editedBytes)
+		if edited == "" {
+			fmt.Println("⚠️ Prompt left empty. Aborting.")
+			return
+		}
+
+		cfg.SystemPrompt = edited
+		if err := config.Save(cfg); err != nil {
+			fmt.Println("❌ Failed to save config:", err)
+		} else {
+			fmt.Println("✅ System prompt updated successfully.")
+		}
+	},
+}
+
+
+var ShowConfigCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show current config",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg := config.LoadOrDefault()
+		fmt.Printf("\nSystem Prompt: %s\n", cfg.SystemPrompt)
+		fmt.Printf("Provider: %s\n", cfg.Provider)
+		fmt.Printf("Model: %s\n", cfg.Model)
+		if cfg.APIKey != "" {
+			fmt.Println("API Key: [set]")
+		} else {
+			fmt.Println("API Key: [not set]")
+		}
 	},
 }
 
 func init() {
-	ConfigCmd.AddCommand(setCmd, showCmd, editCmd)
-}
+	ConfigCmd.AddCommand(EditConfigCmd)
+	ConfigCmd.AddCommand(ShowConfigCmd)
+} 
