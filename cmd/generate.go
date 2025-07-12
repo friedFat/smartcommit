@@ -14,9 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var yesFlag bool
+
 var GenerateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate a commit message using AI",
+	Long: `Generate a commit message from staged Git changes using a local or remote LLM.
+
+By default, it launches an interactive flow.
+Use --yes or -y to skip the prompt and commit directly.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadOrDefault()
 
@@ -37,6 +43,15 @@ var GenerateCmd = &cobra.Command{
 		message, err := provider.Generate(promptText)
 		if err != nil {
 			fmt.Println("❌ Generation failed:", err)
+			return
+		}
+
+		if yesFlag {
+			fmt.Println("💡 Generated Commit Message:")
+			fmt.Println("----------------------------------")
+			fmt.Println(message)
+			fmt.Println("----------------------------------")
+			runGitCommit(message)
 			return
 		}
 
@@ -74,6 +89,10 @@ var GenerateCmd = &cobra.Command{
 			}
 		}
 	},
+}
+
+func init() {
+	GenerateCmd.Flags().BoolVarP(&yesFlag, "yes", "y", false, "Autogenerate and commit without prompting")
 }
 
 func runGitCommit(msg string) {
