@@ -17,22 +17,24 @@ func main() {
 from staged changes using local or remote LLMs (e.g., Ollama, OpenAI).
 
 Examples:
-  smartcommit generate          Generate a commit message from staged changes
-  smartcommit config edit       Edit the system prompt (tone/style)
-  smartcommit config show       View current configuration
+  smartcommit generate           Generate a commit message from staged changes
+  smartcommit generate --yes     Auto-commit with no prompts
+  smartcommit config edit        Edit the system prompt (tone/style)
+  smartcommit config show        View current configuration
 
 Run 'smartcommit [command] --help' for detailed command help.`,
 	}
-	
-	// Override Cobra's help output with our Long text
+
+	// Override Cobra's default help output with our Long field
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, _ []string) {
 		fmt.Println(cmd.Long)
 	})
 
-	// Register subcommands
+	// Add subcommands
 	rootCmd.AddCommand(cmd.GenerateCmd)
 	rootCmd.AddCommand(cmd.ConfigCmd)
 
+	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println("❌", err)
 		os.Exit(1)

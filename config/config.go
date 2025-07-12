@@ -28,7 +28,6 @@ func defaultConfig() *Config {
 func configPath() string {
 	configDir, _ := os.UserConfigDir()
 	full := filepath.Join(configDir, "smartcommit", "config.yaml")
-	fmt.Println("🕵️ Config path being used:", full) // <- add this
 	return full
 }
 
