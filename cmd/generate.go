@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eiannone/keyboard"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
 	"smartcommit/config"
 	"smartcommit/diff"
 	"smartcommit/llm"
-
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 )
 
 var yesFlag bool
@@ -28,13 +29,13 @@ Use --yes or -y to skip the prompt and commit directly.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadOrDefault()
 
-		d, err := diff.GetStagedDiff()
-		if err != nil || strings.TrimSpace(d) == "" {
+		diffText, err := diff.GetStagedDiff()
+		if err != nil || diffText == "" {
 			fmt.Println("❌ No staged changes found.")
 			return
 		}
 
-		prompt := cfg.SystemPrompt + "\n\nDiff:\n" + d
+		promptText := cfg.SystemPrompt + "\n\nDiff:\n" + diffText
 
 		provider, err := llm.GetProvider(cfg)
 		if err != nil {
@@ -42,7 +43,7 @@ Use --yes or -y to skip the prompt and commit directly.`,
 			return
 		}
 
-		message, err := provider.Generate(prompt)
+		message, err := provider.Generate(promptText)
 		if err != nil {
 			fmt.Println("❌ Generation failed:", err)
 			return
@@ -54,39 +55,46 @@ Use --yes or -y to skip the prompt and commit directly.`,
 			fmt.Println("----------------------------------")
 			fmt.Println(message)
 			fmt.Println("----------------------------------")
-			commit(message)
+			runGitCommit(message)
 			return
 		}
 
-		// Interactive loop
 		for {
 			fmt.Println("\n💡 Generated Commit Message:")
 			fmt.Println("----------------------------------")
 			fmt.Println(message)
 			fmt.Println("----------------------------------")
-			fmt.Print("Choose [c]ommit, [e]dit, [r]egenerate, [q]uit: ")
+			fmt.Print("Choose [c]ommit, [e]dit, [r]egen, [q]uit: ")
 
-			var choice string
-			fmt.Scanln(&choice)
+			if err := keyboard.Open(); err != nil {
+				fmt.Println("❌ Keyboard input error:", err)
+				return
+			}
+			char, _, err := keyboard.GetSingleKey()
+			keyboard.Close()
+			if err != nil {
+				fmt.Println("❌ Failed to read key:", err)
+				return
+			}
 
-			switch choice {
+			switch strings.ToLower(string(char)) {
 			case "c":
-				commit(message)
+				runGitCommit(message)
 				return
 			case "e":
-				message = edit(message)
+				message = editMessage(message)
 			case "r":
 				fmt.Print("\n🔄 Regenerating")
 				for i := 0; i < 3; i++ {
 					fmt.Print(".")
 					time.Sleep(200 * time.Millisecond)
 				}
-				msg, err := provider.Generate(prompt)
+				message, err = provider.Generate(promptText)
 				if err != nil {
-					fmt.Println("\n❌ Regeneration failed:", err)
-				} else {
-					message = strings.TrimSpace(msg)
+					fmt.Println("❌ Regeneration failed:", err)
+					continue
 				}
+				message = strings.TrimSpace(message)
 			case "q":
 				fmt.Println("👋 Aborted.")
 				return
@@ -102,20 +110,19 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 }
 
-func commit(msg string) {
+func runGitCommit(msg string) {
 	fmt.Println("✅ Committing with:")
 	fmt.Println(msg)
 	cmd := exec.Command("git", "commit", "-m", msg)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Println("❌ Git commit failed:", err)
 	}
 }
 
-func edit(current string) string {
+func editMessage(current string) string {
 	prompt := promptui.Prompt{
 		Label:     "Edit Commit Message",
 		Default:   current,
@@ -126,5 +133,5 @@ func edit(current string) string {
 		fmt.Println("⚠️ Edit cancelled.")
 		return current
 	}
-	return result
+	return strings.TrimSpace(result)
 }
