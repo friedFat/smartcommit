@@ -1,24 +1,21 @@
 package llm
 
-import "smartcommit/config"
+import (
+	"fmt"
+	"smartcommit/config"
+)
 
+// Provider is anything that can Generate a commit message from a prompt.
+type Provider interface {
+    Generate(prompt string) (string, error)
+}
+
+// GetProvider returns an HTTPProvider (which implements Provider) for any cfg.Provider.
 func GetProvider(cfg *config.Config) (Provider, error) {
-	switch cfg.Provider {
-	case "ollama":
-		return &OllamaProvider{Model: cfg.Model}, nil
-	default:
-		return nil, ErrUnsupportedProvider(cfg.Provider)
-	}
-}
-
-func ErrUnsupportedProvider(name string) error {
-	return &UnsupportedProvider{name}
-}
-
-type UnsupportedProvider struct {
-	Name string
-}
-
-func (e *UnsupportedProvider) Error() string {
-	return "unsupported provider: " + e.Name
+    switch cfg.Provider {
+    case "ollama", "openai", "http":
+        return NewHTTPProvider(cfg)
+    default:
+        return nil, fmt.Errorf("unsupported provider: %s", cfg.Provider)
+    }
 }
