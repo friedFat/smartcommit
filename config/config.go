@@ -56,3 +56,7 @@ func Save(cfg *Config) error {
     }
     return os.WriteFile(path, out, 0644)
 }
+func ConfigPath() string {
+	dir, _ := os.UserConfigDir()
+	return filepath.Join(dir, "smartcommit", "config.yaml")
+}
