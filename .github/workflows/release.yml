@@ -1,62 +1,57 @@
-name: Build and Release
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*' # e.g. v1.1.1, v2.0.0
+      - 'v*.*.*' # Matches tags like v1.1.1 or v2.0.0
 
 jobs:
   build:
+    name: Build & Release Binaries
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, macos, windows]
-        arch: [amd64]
+
+    permissions:
+      contents: write # Required to upload release assets
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: 🛠️ Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.21'
 
-      - name: Build binary
+      - name: 🧼 Clean previous builds
+        run: rm -rf dist && mkdir dist
+
+      - name: 📦 Build for Linux
         run: |
-          mkdir -p dist/${{ matrix.os }}
-          if [[ "${{ matrix.os }}" == "linux" ]]; then
-            GOOS=linux   GOARCH=${{ matrix.arch }} CGO_ENABLED=0 \
-              go build -ldflags="-s -w" -o dist/linux/smartcommit-linux .
-          elif [[ "${{ matrix.os }}" == "macos" ]]; then
-            GOOS=darwin  GOARCH=${{ matrix.arch }} CGO_ENABLED=0 \
-              go build -ldflags="-s -w" -o dist/macos/smartcommit-macos .
-          else
-            GOOS=windows GOARCH=${{ matrix.arch }} CGO_ENABLED=0 \
-              go build -ldflags="-s -w" -o dist/windows/smartcommit-windows.exe .
-          fi
+          VERSION=${GITHUB_REF#refs/tags/}
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X 'smartcommit/cmd.version=${VERSION}'" -o dist/smartcommit-linux
 
-      - name: Package archives
+      - name: 📦 Build for macOS
         run: |
-          if [[ "${{ matrix.os }}" == "linux" ]]; then
-            tar -czvf dist/smartcommit-linux.tar.gz -C dist/linux smartcommit-linux
-          elif [[ "${{ matrix.os }}" == "macos" ]]; then
-            tar -czvf dist/smartcommit-macos.tar.gz -C dist/macos smartcommit-macos
-          else
-            tar -czvf dist/smartcommit-windows.tar.gz -C dist/windows smartcommit-windows.exe
-          fi
+          VERSION=${GITHUB_REF#refs/tags/}
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X 'smartcommit/cmd.version=${VERSION}'" -o dist/smartcommit-macos
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: 📦 Build for Windows
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          GOOS=windows GOARCH=amd64 go build -ldflags "-X 'smartcommit/cmd.version=${VERSION}'" -o dist/smartcommit-windows.exe
+
+      - name: 📚 Package binaries
+        run: |
+          cd dist
+          tar -czf smartcommit-linux.tar.gz smartcommit-linux
+          tar -czf smartcommit-macos.tar.gz smartcommit-macos
+          tar -czf smartcommit-windows.tar.gz smartcommit-windows.exe
+
+      - name: 🚀 Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
           files: |
             dist/smartcommit-linux.tar.gz
             dist/smartcommit-macos.tar.gz
