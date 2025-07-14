@@ -1,4 +1,3 @@
-````markdown
 # SmartCommit
 
 **SmartCommit** is a blazing-fast CLI tool that uses AI to generate meaningful Git commit messages from your staged changes — powered by local or remote LLMs (Ollama, OpenAI, or any HTTP-based LLM).
