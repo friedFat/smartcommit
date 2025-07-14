@@ -27,3 +27,7 @@ or see:
 func Execute() error {
     return rootCmd.Execute()
 }
+
+func init() {
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+}
