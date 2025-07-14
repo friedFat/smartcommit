@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"smartcommit/config"
+	"github.com/manyfacedqod/smartcommit/config"
 )
 
 type HTTPProvider struct {

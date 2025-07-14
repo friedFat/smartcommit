@@ -8,7 +8,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
-	"smartcommit/config"
+	"github.com/manyfacedqod/smartcommit/config"
 )
 
 var setupCmd = &cobra.Command{

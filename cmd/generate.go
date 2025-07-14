@@ -12,9 +12,9 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
-	"smartcommit/config"
-	"smartcommit/diff"
-	"smartcommit/llm"
+	"github.com/manyfacedqod/smartcommit/config"
+	"github.com/manyfacedqod/smartcommit/diff"
+	"github.com/manyfacedqod/smartcommit/llm"
 )
 
 var yesFlag bool

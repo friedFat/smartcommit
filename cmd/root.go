@@ -1,6 +1,12 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+const version = "v1.1.0"
 
 var rootCmd = &cobra.Command{
     Use:   "smartcommit",
@@ -21,6 +27,15 @@ If you ever need assistance, run:
 or see:
   https://github.com/your‑repo/smartcommit#readme
 `,
+    Version: version,
+
+}
+var versionCmd = &cobra.Command{
+    Use:   "version",
+    Short: "Print SmartCommit version",
+    Run: func(cmd *cobra.Command, args []string) {
+        fmt.Printf("SmartCommit %s\n", version)
+    },
 }
 
 
@@ -30,4 +45,9 @@ func Execute() error {
 
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+  rootCmd.SetVersionTemplate("SmartCommit {{.Version}}\n")
+  rootCmd.AddCommand(versionCmd)
+  rootCmd.SetVersionTemplate("SmartCommit {{.Version}}\n")
+
+
 }

@@ -1,6 +1,6 @@
 package main
 
-import "smartcommit/cmd"
+import "github.com/manyfacedqod/smartcommit/cmd"
 
 func main() {
     cmd.Execute()

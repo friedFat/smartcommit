@@ -2,7 +2,7 @@ package llm
 
 import (
 	"fmt"
-	"smartcommit/config"
+	"github.com/manyfacedqod/smartcommit/config"
 )
 
 // Provider is anything that can Generate a commit message from a prompt.

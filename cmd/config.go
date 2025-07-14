@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"smartcommit/config"
+	"github.com/manyfacedqod/smartcommit/config"
 
 	"github.com/spf13/cobra"
 )
