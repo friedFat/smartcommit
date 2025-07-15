@@ -25,11 +25,12 @@ var generateCmd = &cobra.Command{
 	Long: `Generate a commit message from staged Git changes using a local or remote LLM.
 
 By default, it launches an interactive flow.
-Use --yes or -y to skip the prompt and commit directly.`,
+Use --yes or -y to skip the prompt and commit directly.
+Flags after -- will be passed directly to git. `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadOrDefault()
 
-		diffText, err := diff.GetStagedDiff()
+		diffText, err := diff.GetStagedDiff(args)
 		if err != nil || diffText == "" {
 			fmt.Println("❌ No staged changes found.")
 			return
