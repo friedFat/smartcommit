@@ -56,7 +56,7 @@ Flags after -- will be passed directly to git. `,
 			fmt.Println("----------------------------------")
 			fmt.Println(message)
 			fmt.Println("----------------------------------")
-			runGitCommit(message)
+			runGitCommit(args, message)
 			return
 		}
 
@@ -80,7 +80,7 @@ Flags after -- will be passed directly to git. `,
 
 			switch strings.ToLower(string(char)) {
 			case "c":
-				runGitCommit(message)
+				runGitCommit(args, message)
 				return
 			case "e":
 				message = editMessage(message)
@@ -111,10 +111,11 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 }
 
-func runGitCommit(msg string) {
+func runGitCommit(options []string, msg string) {
 	fmt.Println("✅ Committing with:")
 	fmt.Println(msg)
-	cmd := exec.Command("git", "commit", "-m", msg)
+	options = append(options, "commit", "-m", msg);
+	cmd := exec.Command("git", options...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
