@@ -51,7 +51,7 @@ var editCmd = &cobra.Command{
 
 		editor := os.Getenv("EDITOR")
 		if editor == "" {
-			editor = "vim"
+			editor = "vi"
 		}
 
 		editCmd := exec.Command(editor, tmpFile.Name())
