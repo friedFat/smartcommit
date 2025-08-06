@@ -51,6 +51,9 @@ var editCmd = &cobra.Command{
 
 		editor := os.Getenv("EDITOR")
 		if editor == "" {
+			editor = os.Getenv("VISUAL")
+		}
+		if editor == "" {
 			editor = "vi"
 		}
 
